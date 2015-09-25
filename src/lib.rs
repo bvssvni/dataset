@@ -94,3 +94,22 @@ impl<T> Iterator for ReadData<T> {
         }
     }
 }
+
+#[macro_export]
+macro_rules! has_table_impls {
+    ($x:path { $($n:ident : $t:path),* }) => {
+
+        $(
+        impl HasTable<$t> for $x {
+            fn raw_table(&mut self) -> *mut Vec<$t> {
+                &mut self.$n as *mut _
+            }
+
+            fn get_table(&self) -> &[$t] {
+                &self.$n[0..]
+            }
+        }
+        )*
+
+    }
+}

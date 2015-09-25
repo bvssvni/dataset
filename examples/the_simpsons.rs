@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate dataset;
 
 use dataset::*;
@@ -38,20 +39,20 @@ fn bar<T: DataSet>(dataset: &T) {
     }
 }
 
-static FAMILY_TABLES: &'static [Table<'static>] = &[
-    Table { name: "Person", columns: &[
-        Column { name: "first_name", column_type: ColumnType::String },
-        Column { name: "last_name", column_type: ColumnType::String }
-    ] },
-    Table { name: "Parent", columns: &[
-        Column { name: "parent_id", column_type: ColumnType::Usize },
-        Column { name: "child_id", column_type: ColumnType::Usize }
-    ] }
-];
-
 impl DataSet for Family {
     fn tables(&self) -> &[Table] {
-        FAMILY_TABLES
+        static TABLES: &'static [Table<'static>] = &[
+            Table { name: "Person", columns: &[
+                Column { name: "first_name", column_type: ColumnType::String },
+                Column { name: "last_name", column_type: ColumnType::String }
+            ] },
+            Table { name: "Parent", columns: &[
+                Column { name: "parent_id", column_type: ColumnType::Usize },
+                Column { name: "child_id", column_type: ColumnType::Usize }
+            ] }
+        ];
+
+        TABLES
     }
 
     fn read_usize(&self, table: &str, column: &str) -> Option<ReadData<usize>> {
@@ -133,23 +134,10 @@ impl DataSet for Family {
     }
 }
 
-impl HasTable<Person> for Family {
-    fn raw_table(&mut self) -> *mut Vec<Person> {
-        &mut self.persons as *mut _
-    }
-
-    fn get_table(&self) -> &[Person] {
-        &self.persons[0..]
-    }
-}
-
-impl HasTable<Parent> for Family {
-    fn raw_table(&mut self) -> *mut Vec<Parent> {
-        &mut self.parents as *mut _
-    }
-
-    fn get_table(&self) -> &[Parent] {
-        &self.parents[0..]
+has_table_impls! {
+    Family {
+        persons: Person,
+        parents: Parent
     }
 }
 
