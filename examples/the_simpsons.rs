@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate dataset;
 
+use std::any::{ Any, TypeId };
+
 use dataset::*;
 
 pub struct Family {
@@ -31,102 +33,99 @@ fn bar<T: DataSet>(dataset: &T) {
             *dataset.read_usize("Parent", "child_id").unwrap().get(0).unwrap()
         }, 2);
     */
-    for p in dataset.read_usize("Parent", "parent_id").unwrap() {
+    for p in dataset.read::<usize>("Parent", "parent_id").unwrap() {
         println!("{}", unsafe { *p });
     }
-    for p in dataset.read_string("Person", "last_name").unwrap() {
+    for p in dataset.read::<String>("Person", "last_name").unwrap() {
         println!("{}", unsafe { &*p });
     }
 }
 
 impl DataSet for Family {
-    fn tables(&self) -> &[Table] {
-        static TABLES: &'static [Table<'static>] = &[
-            Table { name: "Person", columns: &[
-                Column { name: "first_name", column_type: ColumnType::String },
-                Column { name: "last_name", column_type: ColumnType::String }
-            ] },
-            Table { name: "Parent", columns: &[
-                Column { name: "parent_id", column_type: ColumnType::Usize },
-                Column { name: "child_id", column_type: ColumnType::Usize }
-            ] }
-        ];
-
-        TABLES
+    tables! {
+        Person { first_name: String, last_name: String }
+        Parent { parent_id: usize, child_id: usize }
     }
 
-    fn read_usize(&self, table: &str, column: &str) -> Option<ReadData<usize>> {
-        use std::mem::size_of;
+    fn read<T: Any>(&self, table: &str, column: &str) -> Option<ReadData<T>> {
+        use std::mem::{ size_of, transmute };
         use std::ptr::null;
 
         match (table, column) {
             ("Parent", "parent_id") => {
-                if self.parents.len() == 0 {
-                    Some(ReadData {
-                        ptr: null(),
-                        len: 0,
-                        size: 0,
-                    })
+                if TypeId::of::<T>() == TypeId::of::<usize>() {
+                    if self.parents.len() == 0 {
+                        Some(ReadData {
+                            ptr: null(),
+                            len: 0,
+                            size: 0,
+                        })
+                    } else {
+                        Some(unsafe {transmute(ReadData {
+                            ptr: &self.parents[0].parent_id,
+                            len: self.parents.len(),
+                            size: size_of::<Parent>()
+                        })})
+                    }
                 } else {
-                    Some(ReadData {
-                        ptr: &self.parents[0].parent_id,
-                        len: self.parents.len(),
-                        size: size_of::<Parent>()
-                    })
+                    None
                 }
             }
             ("Parent", "child_id") => {
-                if self.parents.len() == 0 {
-                    Some(ReadData {
-                        ptr: null(),
-                        len: 0,
-                        size: 0,
-                    })
+                if TypeId::of::<T>() == TypeId::of::<usize>() {
+                    if self.parents.len() == 0 {
+                        Some(ReadData {
+                            ptr: null(),
+                            len: 0,
+                            size: 0,
+                        })
+                    } else {
+                        Some(unsafe {transmute(ReadData {
+                            ptr: &self.parents[0].child_id,
+                            len: self.parents.len(),
+                            size: size_of::<Parent>()
+                        })})
+                    }
                 } else {
-                    Some(ReadData {
-                        ptr: &self.parents[0].child_id,
-                        len: self.parents.len(),
-                        size: size_of::<Parent>()
-                    })
+                    None
                 }
             }
-            _ => None
-        }
-    }
-
-    fn read_string(&self, table: &str, column: &str) -> Option<ReadData<String>> {
-        use std::mem::size_of;
-        use std::ptr::null;
-
-        match (table, column) {
             ("Person", "first_name") => {
-                if self.persons.len() == 0 {
-                    Some(ReadData {
-                        ptr: null(),
-                        len: 0,
-                        size: 0,
-                    })
+                if TypeId::of::<T>() == TypeId::of::<String>() {
+                    if self.persons.len() == 0 {
+                        Some(ReadData {
+                            ptr: null(),
+                            len: 0,
+                            size: 0,
+                        })
+                    } else {
+                        Some(unsafe {transmute(ReadData {
+                            ptr: &self.persons[0].first_name,
+                            len: self.persons.len(),
+                            size: size_of::<Person>()
+                        })})
+                    }
                 } else {
-                    Some(ReadData {
-                        ptr: &self.persons[0].first_name,
-                        len: self.persons.len(),
-                        size: size_of::<Person>()
-                    })
+                    None
                 }
             }
             ("Person", "last_name") => {
-                if self.persons.len() == 0 {
-                    Some(ReadData {
-                        ptr: null(),
-                        len: 0,
-                        size: 0,
-                    })
+                if TypeId::of::<T>() == TypeId::of::<String>() {
+                    if self.persons.len() == 0 {
+                        Some(ReadData {
+                            ptr: null(),
+                            len: 0,
+                            size: 0,
+                        })
+                    } else {
+                        Some(unsafe {transmute(ReadData {
+                            ptr: &self.persons[0].last_name,
+                            len: self.persons.len(),
+                            size: size_of::<Person>()
+                        })})
+                    }
                 } else {
-                    Some(ReadData {
-                        ptr: &self.persons[0].last_name,
-                        len: self.persons.len(),
-                        size: size_of::<Person>()
-                    })
+                    None
                 }
             }
             _ => None

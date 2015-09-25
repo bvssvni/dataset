@@ -2,16 +2,15 @@
 
 //! A dataset library.
 
+use std::any::Any;
+
 /// Implemented by all data sets.
 pub trait DataSet {
     /// Gets the table description of the data set.
     fn tables(&self) -> &[Table];
 
     /// Read usize data from a column.
-    fn read_usize(&self, table: &str, column: &str) -> Option<ReadData<usize>>;
-
-    /// Read string data from a column.
-    fn read_string(&self, table: &str, column: &str) -> Option<ReadData<String>>;
+    fn read<T: Any>(&self, table: &str, column: &str) -> Option<ReadData<T>>;
 }
 
 /// Implemented by datasets that has a table.
@@ -110,6 +109,33 @@ macro_rules! has_table_impls {
             }
         }
         )*
+
+    }
+}
+
+#[macro_export]
+macro_rules! column_type {
+    (usize) => { ColumnType::Usize };
+    (String) => { ColumnType::String }
+}
+
+#[macro_export]
+macro_rules! tables {
+    ($($x:path { $($n:ident : $t:ident),* })*) => {
+
+        fn tables(&self) -> &[Table] {
+            static TABLES: &'static [Table<'static>] = &[
+                $(
+                Table { name: stringify!($x), columns: &[
+                    $(
+                    Column { name: stringify!($n), column_type: column_type!($t) },
+                    )*
+                ] },
+                )*
+            ];
+
+            TABLES
+        }
 
     }
 }
