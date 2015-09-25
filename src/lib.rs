@@ -6,6 +6,12 @@
 pub trait DataSet {
     /// Gets the table description of the data set.
     fn tables(&self) -> &[Table];
+
+    /// Read usize data from a column.
+    fn read_usize(&self, table: &str, column: &str) -> Option<ReadData<usize>>;
+
+    /// Read string data from a column.
+    fn read_string(&self, table: &str, column: &str) -> Option<ReadData<String>>;
 }
 
 /// Implemented by datasets that has a table.
@@ -47,4 +53,44 @@ pub enum ColumnType {
     Usize,
     /// The column is a string.
     String,
+}
+
+/// Reads data.
+pub struct ReadData<T> {
+    /// The current pointer.
+    pub ptr: *const T,
+    /// The number of data left.
+    pub len: usize,
+    /// The number of bytes to jump to next pointer.
+    pub size: usize,
+}
+
+impl<T> ReadData<T> {
+    /// Gets pointer at index location.
+    pub fn get(&self, index: usize) -> Option<*const T> {
+        if index >= self.len { None }
+        else {
+            Some(unsafe {
+                (self.ptr as *const u8)
+                    .offset((self.size * index) as isize) as *const T
+            })
+        }
+    }
+}
+
+impl<T> Iterator for ReadData<T> {
+    type Item = *const T;
+
+    fn next(&mut self) -> Option<*const T> {
+        if self.len == 0 { None }
+        else {
+            self.len -= 1;
+            let res = self.ptr;
+            self.ptr = unsafe {
+                (self.ptr as *const u8)
+                    .offset(self.size as isize) as *const T
+            };
+            Some(res)
+        }
+    }
 }

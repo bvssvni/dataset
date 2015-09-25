@@ -24,6 +24,20 @@ fn foo<T: HasTable<Person> + HasTable<Parent>>(dataset: &mut T) {
     println!("{}", parents.len());
 }
 
+fn bar<T: DataSet>(dataset: &T) {
+    /*
+    assert_eq!(unsafe {
+            *dataset.read_usize("Parent", "child_id").unwrap().get(0).unwrap()
+        }, 2);
+    */
+    for p in dataset.read_usize("Parent", "parent_id").unwrap() {
+        println!("{}", unsafe { *p });
+    }
+    for p in dataset.read_string("Person", "last_name").unwrap() {
+        println!("{}", unsafe { &*p });
+    }
+}
+
 static FAMILY_TABLES: &'static [Table<'static>] = &[
     Table { name: "Person", columns: &[
         Column { name: "first_name", column_type: ColumnType::String },
@@ -38,6 +52,84 @@ static FAMILY_TABLES: &'static [Table<'static>] = &[
 impl DataSet for Family {
     fn tables(&self) -> &[Table] {
         FAMILY_TABLES
+    }
+
+    fn read_usize(&self, table: &str, column: &str) -> Option<ReadData<usize>> {
+        use std::mem::size_of;
+        use std::ptr::null;
+
+        match (table, column) {
+            ("Parent", "parent_id") => {
+                if self.parents.len() == 0 {
+                    Some(ReadData {
+                        ptr: null(),
+                        len: 0,
+                        size: 0,
+                    })
+                } else {
+                    Some(ReadData {
+                        ptr: &self.parents[0].parent_id,
+                        len: self.parents.len(),
+                        size: size_of::<Parent>()
+                    })
+                }
+            }
+            ("Parent", "child_id") => {
+                if self.parents.len() == 0 {
+                    Some(ReadData {
+                        ptr: null(),
+                        len: 0,
+                        size: 0,
+                    })
+                } else {
+                    Some(ReadData {
+                        ptr: &self.parents[0].child_id,
+                        len: self.parents.len(),
+                        size: size_of::<Parent>()
+                    })
+                }
+            }
+            _ => None
+        }
+    }
+
+    fn read_string(&self, table: &str, column: &str) -> Option<ReadData<String>> {
+        use std::mem::size_of;
+        use std::ptr::null;
+
+        match (table, column) {
+            ("Person", "first_name") => {
+                if self.persons.len() == 0 {
+                    Some(ReadData {
+                        ptr: null(),
+                        len: 0,
+                        size: 0,
+                    })
+                } else {
+                    Some(ReadData {
+                        ptr: &self.persons[0].first_name,
+                        len: self.persons.len(),
+                        size: size_of::<Person>()
+                    })
+                }
+            }
+            ("Person", "last_name") => {
+                if self.persons.len() == 0 {
+                    Some(ReadData {
+                        ptr: null(),
+                        len: 0,
+                        size: 0,
+                    })
+                } else {
+                    Some(ReadData {
+                        ptr: &self.persons[0].last_name,
+                        len: self.persons.len(),
+                        size: size_of::<Person>()
+                    })
+                }
+            }
+            _ => None
+        }
     }
 }
 
@@ -98,5 +190,6 @@ fn main() {
         }
     }
 
-    foo(&mut family);
+    // foo(&mut family);
+    bar(&family);
 }
