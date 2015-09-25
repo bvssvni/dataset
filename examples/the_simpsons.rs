@@ -1,10 +1,10 @@
 extern crate dataset;
 
-use std::any::{ Any, TypeId };
 use dataset::*;
 
 pub struct Family {
     pub persons: Vec<Person>,
+    pub parents: Vec<Parent>,
 }
 
 pub struct Person {
@@ -12,36 +12,45 @@ pub struct Person {
     pub last_name: String,
 }
 
-unsafe impl DataSet for Family {
-    fn get_table<T: Any>(&self) -> Option<&[T]> {
-        use std::mem::transmute;
+pub struct Parent {
+    pub parent_id: usize,
+    pub child_id: usize,
+}
 
-        let id = TypeId::of::<T>();
-        match id {
-            x if x == TypeId::of::<Person>() => {
-                unsafe { Some(transmute(&self.persons[0..])) }
-            }
-            _ => None
-        }
+fn foo<T: HasTable<Person> + HasTable<Parent>>(dataset: &mut T) {
+    let persons: &mut Vec<Person> = unsafe { &mut *dataset.raw_table() };
+    let parents: &mut Vec<Parent> = unsafe { &mut *dataset.raw_table() };
+    println!("{}", persons.len());
+    println!("{}", parents.len());
+}
+
+impl DataSet for Family {}
+
+impl HasTable<Person> for Family {
+    fn raw_table(&mut self) -> *mut Vec<Person> {
+        &mut self.persons as *mut _
     }
 
-    fn raw_table<T: Any>(&mut self) -> Option<*mut Vec<T>> {
-        use std::mem::transmute;
+    fn get_table(&self) -> &[Person] {
+        &self.persons[0..]
+    }
+}
 
-        let id = TypeId::of::<T>();
-        match id {
-            x if x == TypeId::of::<Person>() => {
-                unsafe { Some(transmute(&mut self.persons)) }
-            }
-            _ => None
-        }
+impl HasTable<Parent> for Family {
+    fn raw_table(&mut self) -> *mut Vec<Parent> {
+        &mut self.parents as *mut _
+    }
+
+    fn get_table(&self) -> &[Parent] {
+        &self.parents[0..]
     }
 }
 
 fn main() {
     let simpson = "Simpson";
     let mut family = Family {
-        persons: vec![]
+        persons: vec![],
+        parents: vec![],
     };
 
     let homer = Person { first_name: "Homer".into(), last_name: simpson.into() };
@@ -50,16 +59,29 @@ fn main() {
     let lisa = Person { first_name: "Lisa".into(), last_name: simpson.into() };
     let maggie = Person { first_name: "Maggie".into(), last_name: simpson.into() };
 
-    {
-        let persons = unsafe { &mut *family.raw_table().unwrap() };
-        persons.push(homer);
-        persons.push(marge);
-        persons.push(bart);
-        persons.push(lisa);
-        persons.push(maggie);
+    let homer_id = family.add(homer);
+    let marge_id = family.add(marge);
+    let bart_id = family.add(bart);
+    let lisa_id = family.add(lisa);
+    let maggie_id = family.add(maggie);
+    for &parent in &[homer_id, marge_id] {
+        for &child in &[bart_id, lisa_id, maggie_id] {
+            family.add(Parent { parent_id: parent, child_id: child });
+        }
     }
 
-    for p in family.get_table::<Person>().unwrap() {
-        println!("{} {}", p.first_name, p.last_name);
+    {
+        let persons: &[Person] = family.get_table();
+        let parents: &[Parent] = family.get_table();
+        for p in persons {
+            println!("{} {}", p.first_name, p.last_name);
+        }
+        for p in parents {
+            let parent = &persons[p.parent_id];
+            let child = &persons[p.child_id];
+            println!("{} is parent of {}", parent.first_name, child.first_name);
+        }
     }
+
+    foo(&mut family);
 }
