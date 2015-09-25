@@ -24,7 +24,22 @@ fn foo<T: HasTable<Person> + HasTable<Parent>>(dataset: &mut T) {
     println!("{}", parents.len());
 }
 
-impl DataSet for Family {}
+static FAMILY_TABLES: &'static [Table<'static>] = &[
+    Table { name: "Person", columns: &[
+        Column { name: "first_name", column_type: ColumnType::String },
+        Column { name: "last_name", column_type: ColumnType::String }
+    ] },
+    Table { name: "Parent", columns: &[
+        Column { name: "parent_id", column_type: ColumnType::Usize },
+        Column { name: "child_id", column_type: ColumnType::Usize }
+    ] }
+];
+
+impl DataSet for Family {
+    fn tables(&self) -> &[Table] {
+        FAMILY_TABLES
+    }
+}
 
 impl HasTable<Person> for Family {
     fn raw_table(&mut self) -> *mut Vec<Person> {
