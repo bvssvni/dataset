@@ -1,2 +1,2 @@
 # dataset
-A dataset library written in Rust
+A data set library written in Rust
