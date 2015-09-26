@@ -4,16 +4,19 @@
 
 use std::any::Any;
 
-/// Implemented by all data sets.
+/// Implemented by data sets for runtime reflection.
+/// A data set is a collection of tables, usually `Vec<T>`.
 pub trait DataSet {
-    /// Gets the table description of the data set.
+    /// Gets the table descriptions of the data set.
     fn tables(&self) -> &[Table];
 
-    /// Read usize data from a column.
+    /// Read data from a column.
+    /// The type T is the column type.
+    /// Returns a `ReadData` which points directly inside the table.
     fn read<T: Any>(&self, table: &str, column: &str) -> Option<ReadData<T>>;
 }
 
-/// Implemented by datasets that has a table.
+/// Implemented by datasets that has a table for generic programming.
 pub trait HasTable<T>: DataSet {
     /// Get access to the full table.
     /// Uses a raw pointer to access multiple tables at the same time.
@@ -43,15 +46,7 @@ pub struct Column<'a> {
     /// The name of column.
     pub name: &'a str,
     /// The type of column.
-    pub column_type: ColumnType,
-}
-
-/// The type of column.
-pub enum ColumnType {
-    /// A pointer sized integer.
-    Usize,
-    /// The column is a string.
-    String,
+    pub column_type: &'a str,
 }
 
 /// Reads data.
@@ -113,19 +108,6 @@ macro_rules! has_table_impls {
     }
 }
 
-#[macro_export]
-macro_rules! column_type {
-    (usize) => { ColumnType::Usize };
-    (String) => { ColumnType::String }
-}
-
-#[macro_export]
-macro_rules! tables {
-    ($($x:path { $($n:ident : $t:ident),* })*) => {
-
-    }
-}
-
 /// Generates an impl of `DataSet` for a type.
 #[macro_export]
 macro_rules! dataset_impl {
@@ -138,7 +120,7 @@ macro_rules! dataset_impl {
                 $(
                 Table { name: stringify!($table_type), columns: &[
                     $(
-                    Column { name: stringify!($n), column_type: column_type!($t) },
+                    Column { name: stringify!($n), column_type: stringify!($t) },
                     )*
                 ] },
                 )*
