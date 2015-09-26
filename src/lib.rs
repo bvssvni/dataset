@@ -1,6 +1,6 @@
 #![deny(missing_docs)]
 
-//! A dataset library.
+//! A data set library.
 
 use std::any::Any;
 
