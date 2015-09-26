@@ -1,11 +1,38 @@
 #![deny(missing_docs)]
 
 //! A data set library.
+//!
+//! ### What is a data set?
+//!
+//! A data set is a collection of tables that contain data,
+//! very similar to a database.
+//! The data points to other tables to create a data structures.
+//!
+//! In this library, a row in a table corresponds to a normal Rust struct.
+//! Any struct can be used, to make it highly flexible and integrated with Rust.
+//! The functionality of a data set can be added to naive application structures
+//! by implementing the `DataSet` trait, using the macros.
+//!
+//! Because the memory in a table can be reallocated or serialized,
+//! it is common to use `usize` to point to data in another table.
+//! The semantics of references is open and must be handled manually.
+//!
+//! A table row type must be unique for a data set.
+//! There can not be two tables with same type.
+//!
+//! ### Motivation
+//!
+//! This library has two purposes:
+//!
+//! 1. Runtime reflection of data without knowing the internal types.
+//! 2. Generic programming that require a specific set of tables.
+//!
 
 use std::any::Any;
 
 /// Implemented by data sets for runtime reflection.
 /// A data set is a collection of tables, usually `Vec<T>`.
+/// For implementation, use the macro `dataset_impl!`.
 pub trait DataSet {
     /// Gets the table descriptions of the data set.
     fn tables(&self) -> &[Table];
@@ -16,7 +43,7 @@ pub trait DataSet {
     fn read<T: Any>(&self, table: &str, column: &str) -> Option<ReadData<T>>;
 }
 
-/// Implemented by datasets that has a table for generic programming.
+/// Implemented by data sets that has a table for generic programming.
 pub trait HasTable<T>: DataSet {
     /// Get access to the full table.
     /// Uses a raw pointer to access multiple tables at the same time.
