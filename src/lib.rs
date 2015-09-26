@@ -78,6 +78,8 @@ pub struct Column<'a> {
 
 /// An unsafe way of reading data.
 /// This is used for reflection when the types in the data set are unknown.
+/// For use a safe wrapper, put in a method taking an immutable reference
+/// to the data set.
 pub struct ReadData<T> {
     /// The current pointer.
     pub ptr: *const T,
