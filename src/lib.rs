@@ -123,10 +123,20 @@ macro_rules! column_type {
 macro_rules! tables {
     ($($x:path { $($n:ident : $t:ident),* })*) => {
 
+    }
+}
+
+/// Generates an impl of `DataSet` for a type.
+#[macro_export]
+macro_rules! dataset_impl {
+    ($dataset:ident { $($table_name:ident : $table_type:ident { $($n:ident : $t:ident),* })* }) => {
+
+    impl DataSet for $dataset {
+
         fn tables(&self) -> &[Table] {
             static TABLES: &'static [Table<'static>] = &[
                 $(
-                Table { name: stringify!($x), columns: &[
+                Table { name: stringify!($table_type), columns: &[
                     $(
                     Column { name: stringify!($n), column_type: column_type!($t) },
                     )*
@@ -136,6 +146,38 @@ macro_rules! tables {
 
             TABLES
         }
+
+        fn read<T: Any>(&self, table: &str, column: &str) -> Option<ReadData<T>> {
+            use std::mem::{ size_of, transmute };
+            use std::ptr::null;
+
+            match (table, column) {
+                $($(
+                (stringify!($table_type), stringify!($n)) => {
+                    if TypeId::of::<T>() == TypeId::of::<$t>() {
+                        if self.$table_name.len() == 0 {
+                            Some(ReadData {
+                                ptr: null(),
+                                len: 0,
+                                size: 0,
+                            })
+                        } else {
+                            Some(unsafe {transmute(ReadData {
+                                ptr: &self.$table_name[0].$n,
+                                len: self.$table_name.len(),
+                                size: size_of::<$table_type>()
+                            })})
+                        }
+                    } else {
+                        None
+                    }
+                }
+                )*)*
+                _ => None
+            }
+        }
+
+    }
 
     }
 }

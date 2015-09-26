@@ -41,95 +41,10 @@ fn bar<T: DataSet>(dataset: &T) {
     }
 }
 
-impl DataSet for Family {
-    tables! {
-        Person { first_name: String, last_name: String }
-        Parent { parent_id: usize, child_id: usize }
-    }
-
-    fn read<T: Any>(&self, table: &str, column: &str) -> Option<ReadData<T>> {
-        use std::mem::{ size_of, transmute };
-        use std::ptr::null;
-
-        match (table, column) {
-            ("Parent", "parent_id") => {
-                if TypeId::of::<T>() == TypeId::of::<usize>() {
-                    if self.parents.len() == 0 {
-                        Some(ReadData {
-                            ptr: null(),
-                            len: 0,
-                            size: 0,
-                        })
-                    } else {
-                        Some(unsafe {transmute(ReadData {
-                            ptr: &self.parents[0].parent_id,
-                            len: self.parents.len(),
-                            size: size_of::<Parent>()
-                        })})
-                    }
-                } else {
-                    None
-                }
-            }
-            ("Parent", "child_id") => {
-                if TypeId::of::<T>() == TypeId::of::<usize>() {
-                    if self.parents.len() == 0 {
-                        Some(ReadData {
-                            ptr: null(),
-                            len: 0,
-                            size: 0,
-                        })
-                    } else {
-                        Some(unsafe {transmute(ReadData {
-                            ptr: &self.parents[0].child_id,
-                            len: self.parents.len(),
-                            size: size_of::<Parent>()
-                        })})
-                    }
-                } else {
-                    None
-                }
-            }
-            ("Person", "first_name") => {
-                if TypeId::of::<T>() == TypeId::of::<String>() {
-                    if self.persons.len() == 0 {
-                        Some(ReadData {
-                            ptr: null(),
-                            len: 0,
-                            size: 0,
-                        })
-                    } else {
-                        Some(unsafe {transmute(ReadData {
-                            ptr: &self.persons[0].first_name,
-                            len: self.persons.len(),
-                            size: size_of::<Person>()
-                        })})
-                    }
-                } else {
-                    None
-                }
-            }
-            ("Person", "last_name") => {
-                if TypeId::of::<T>() == TypeId::of::<String>() {
-                    if self.persons.len() == 0 {
-                        Some(ReadData {
-                            ptr: null(),
-                            len: 0,
-                            size: 0,
-                        })
-                    } else {
-                        Some(unsafe {transmute(ReadData {
-                            ptr: &self.persons[0].last_name,
-                            len: self.persons.len(),
-                            size: size_of::<Person>()
-                        })})
-                    }
-                } else {
-                    None
-                }
-            }
-            _ => None
-        }
+dataset_impl! {
+    Family {
+        persons: Person { first_name: String, last_name: String }
+        parents: Parent { parent_id: usize, child_id: usize }
     }
 }
 
