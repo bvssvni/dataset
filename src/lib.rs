@@ -49,13 +49,14 @@ pub struct Column<'a> {
     pub column_type: &'a str,
 }
 
-/// Reads data.
+/// An unsafe way of reading data.
+/// This is used for reflection when the types in the data set are unknown.
 pub struct ReadData<T> {
     /// The current pointer.
     pub ptr: *const T,
-    /// The number of data left.
+    /// The number of items left.
     pub len: usize,
-    /// The number of bytes to jump to next pointer.
+    /// The number of bytes to jump to next item.
     pub size: usize,
 }
 
